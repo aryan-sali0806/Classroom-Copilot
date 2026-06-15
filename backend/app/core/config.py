@@ -9,8 +9,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str  # used for session signing
     ENCRYPTION_KEY: str  # Fernet key for OAuth token encryption
 
-    # Database
-    DATABASE_URL: str = "sqlite:///./classroom_copilot.db"
+    # Database — swap this one line to point at any PostgreSQL host
+    DATABASE_URL: str = "postgresql://copilot:copilot@localhost:5432/classroom_copilot"
+
+    # Frontend (used for OAuth redirect after login)
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str
