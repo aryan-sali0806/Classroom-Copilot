@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Copy dependency files first — Docker caches this layer until they change
+COPY pyproject.toml uv.lock .python-version ./
+
+# Install production deps only (no black/pytest/isort)
+RUN uv sync --frozen --no-dev
+
+# Copy application code
+COPY app/ ./app/
+
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
