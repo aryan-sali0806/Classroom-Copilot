@@ -48,6 +48,9 @@ dependencies = [
     # PostgreSQL driver
     "psycopg2-binary==2.9.10",
 
+    # Required by Starlette's SessionMiddleware for cookie signing
+    "itsdangerous==2.2.0",
+
     # Environment variables
     "python-dotenv==1.0.1",
 ]
