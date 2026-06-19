@@ -29,5 +29,8 @@ class Settings(BaseSettings):
     # Poller
     POLL_INTERVAL_MINUTES: int = 15
 
+    # Local file storage (attachments, PDFs)
+    STORAGE_PATH: str = "./storage"
+
 
 settings = Settings()

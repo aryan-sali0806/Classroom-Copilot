@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.db.models import Assignment, User
+from app.workers.pipeline import run_pipeline
 from app.workers.poller import poll_for_user
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
@@ -67,6 +68,28 @@ def get_assignment(
             for att in assignment.attachments
         ],
     }
+
+
+@router.post("/{assignment_id}/pipeline", status_code=202)
+def trigger_pipeline(
+    assignment_id: int,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    assignment = (
+        db.query(Assignment)
+        .join(Assignment.course)
+        .filter(Assignment.id == assignment_id, Assignment.course.has(user_id=user.id))
+        .first()
+    )
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    if assignment.state == "processing":
+        raise HTTPException(status_code=409, detail="Pipeline already running for this assignment")
+
+    background_tasks.add_task(run_pipeline, assignment_id, user.id)
+    return {"status": "pipeline started", "assignment_id": assignment_id}
 
 
 @router.post("/poll")
