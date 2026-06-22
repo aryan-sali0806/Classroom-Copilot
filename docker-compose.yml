@@ -26,15 +26,29 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      # Override to use the docker service name instead of localhost
       DATABASE_URL: postgresql://copilot:copilot@db:5432/classroom_copilot
     depends_on:
       db:
         condition: service_healthy
-    # Mount source code so changes reflect without rebuilding (dev only)
     volumes:
       - ./backend/app:/app/app
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source so Vite HMR picks up file changes without rebuilding
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
