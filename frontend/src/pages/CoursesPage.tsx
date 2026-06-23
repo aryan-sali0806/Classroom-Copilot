@@ -1,16 +1,21 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { BookOpen, ChevronRight, RefreshCw } from "lucide-react"
-import { getCourses } from "@/api/courses"
+import { getCourses, syncCourses } from "@/api/courses"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function CoursesPage() {
   const navigate = useNavigate()
-  const { data: courses, isLoading, isError, refetch, isFetching } = useQuery({
+  const queryClient = useQueryClient()
+  const { data: courses, isLoading, isError, isFetching } = useQuery({
     queryKey: ["courses"],
     queryFn: getCourses,
+  })
+  const { mutate: sync, isPending: isSyncing } = useMutation({
+    mutationFn: syncCourses,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
   })
 
   return (
@@ -21,12 +26,12 @@ export default function CoursesPage() {
           <h1 className="text-xl font-semibold text-gray-900">Classroom Copilot</h1>
         </div>
         <button
-          onClick={() => refetch()}
-          disabled={isFetching}
+          onClick={() => sync()}
+          disabled={isSyncing || isFetching}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-50"
         >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
+          <RefreshCw className={`h-4 w-4 ${isSyncing || isFetching ? "animate-spin" : ""}`} />
+          {isSyncing ? "Syncing…" : "Sync from Google"}
         </button>
       </header>
 
@@ -76,7 +81,15 @@ export default function CoursesPage() {
             {courses?.length === 0 && (
               <div className="col-span-3 text-center py-16 text-gray-400">
                 <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p>No courses found. Try syncing your Google Classroom account.</p>
+                <p className="mb-4">No courses found.</p>
+                <button
+                  onClick={() => sync()}
+                  disabled={isSyncing}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                  {isSyncing ? "Syncing…" : "Sync from Google Classroom"}
+                </button>
               </div>
             )}
           </div>
